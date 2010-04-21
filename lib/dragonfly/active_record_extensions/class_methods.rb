@@ -9,7 +9,9 @@ module Dragonfly
         eigenclass.class_eval do
     
           # Defines e.g. 'image_accessor' for any activerecord class body
-          define_method "#{accessor_prefix}_accessor" do |attribute|
+          define_method "#{accessor_prefix}_accessor" do |*args|
+            attribute = args.shift
+            options = args.length > 0 ? args.shift : {}
       
             # Prior to activerecord 3, adding before callbacks more than once does add it more than once
             before_save :save_attachments unless respond_to?(:before_save_callback_chain) && before_save_callback_chain.find(:save_attachments)
@@ -17,6 +19,13 @@ module Dragonfly
       
             # Register the new attribute
             dragonfly_apps_for_attributes[attribute] = app
+            
+            # Define default, if has
+            if options[:default]
+              define_method "#{attribute}_default" do
+                options[:default]
+              end
+            end
             
             # Define the setter for the attribute
             define_method "#{attribute}=" do |value|
