@@ -11,7 +11,7 @@ describe Dragonfly::UrlHandler do
     before(:each) do
       @url_handler.configure{|c| c.protect_from_dos_attacks = false}
       @path = "/images/some_image.jpg"
-      @query_string = "m=b&o[d]=e&o[j]=k&e[l]=m"
+      @query_string = "m=b&o[d]=e&o[j]=k&e[l]=m&d=my_default.png"
       @parameters = @url_handler.url_to_parameters(@path, @query_string)
     end
     
@@ -46,6 +46,10 @@ describe Dragonfly::UrlHandler do
     
     it "should correctly extract the encoding" do
       @parameters.encoding.should == {:l => 'm'}
+    end
+
+    it "should correctly extract the default" do
+      @parameters.default.should == 'my_default.png'
     end
     
     it "should have processing_options and encoding as optional" do
@@ -91,7 +95,6 @@ describe Dragonfly::UrlHandler do
       parameters.uid.should == 'hello bean'
       parameters.processing_method.should == 'whats up'
     end
-    
   end
   
   describe "forming a url from parameters" do
@@ -102,31 +105,36 @@ describe Dragonfly::UrlHandler do
       @parameters.processing_options = {:d => 'e', :j => 'k'}
       @parameters.format = :gif
       @parameters.encoding = {:x => 'y'}
+      @parameters.default = 'x.gif'
       @url_handler.configure{|c| c.protect_from_dos_attacks = false}
     end
     it "should correctly form a query string" do
-      @url_handler.parameters_to_url(@parameters).should match_url('/thisisunique.gif?m=b&o[d]=e&o[j]=k&e[x]=y')
+      @url_handler.parameters_to_url(@parameters).should match_url('/thisisunique.gif?m=b&o[d]=e&o[j]=k&e[x]=y&d=x.gif')
     end
     it "should correctly form a query string when dos protection turned on" do
       @url_handler.configure{|c| c.protect_from_dos_attacks = true}
       @parameters.should_receive(:generate_sha).and_return('thisismysha12345')
-      @url_handler.parameters_to_url(@parameters).should match_url('/thisisunique.gif?m=b&o[d]=e&o[j]=k&e[x]=y&s=thisismysha12345')
+      @url_handler.parameters_to_url(@parameters).should match_url('/thisisunique.gif?m=b&o[d]=e&o[j]=k&e[x]=y&d=x.gif&s=thisismysha12345')
     end
     it "should leave out any nil parameters" do
       @parameters.processing_method = nil
-      @url_handler.parameters_to_url(@parameters).should match_url('/thisisunique.gif?o[d]=e&o[j]=k&e[x]=y')
+      @url_handler.parameters_to_url(@parameters).should match_url('/thisisunique.gif?o[d]=e&o[j]=k&e[x]=y&d=x.gif')
     end
     it "should leave out the format if there is none" do
       @parameters.format = nil
-      @url_handler.parameters_to_url(@parameters).should match_url('/thisisunique?m=b&o[d]=e&o[j]=k&e[x]=y')
+      @url_handler.parameters_to_url(@parameters).should match_url('/thisisunique?m=b&o[d]=e&o[j]=k&e[x]=y&d=x.gif')
     end
     it "should leave out any empty parameters" do
       @parameters.processing_options = {}
-      @url_handler.parameters_to_url(@parameters).should match_url('/thisisunique.gif?m=b&e[x]=y')
+      @url_handler.parameters_to_url(@parameters).should match_url('/thisisunique.gif?m=b&e[x]=y&d=x.gif')
+    end
+    it "should leave default if has not" do
+      @parameters.default = nil
+      @url_handler.parameters_to_url(@parameters).should match_url('/thisisunique.gif?m=b&o[d]=e&o[j]=k&e[x]=y')
     end
     it "should prefix with the path_prefix if there is one" do
       @url_handler.path_prefix = '/images'
-      @url_handler.parameters_to_url(@parameters).should match_url('/images/thisisunique.gif?m=b&o[d]=e&o[j]=k&e[x]=y')
+      @url_handler.parameters_to_url(@parameters).should match_url('/images/thisisunique.gif?m=b&o[d]=e&o[j]=k&e[x]=y&d=x.gif')
     end
     it "should escape any non-url friendly characters except for '/'" do
       parameters = Dragonfly::Parameters.new :uid => 'hello/u"u', :processing_method => 'm"m', :format => 'jpg'

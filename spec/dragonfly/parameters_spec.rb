@@ -8,7 +8,8 @@ describe Dragonfly::Parameters do
       :processing_method => :round,
       :format => :gif,
       :processing_options => {:radius => 5},
-      :encoding => {:flumps_per_minute => 56}
+      :encoding => {:flumps_per_minute => 56},
+      :default => "default_image.png"
     }
   end
   
@@ -38,6 +39,7 @@ describe Dragonfly::Parameters do
       @parameters.format.should be_nil
       @parameters.processing_options.should == {}
       @parameters.encoding.should == {}
+      @parameters.default.should be_nil
     end
     it "should provide writers too" do
       @parameters.uid = 'hello'
@@ -104,6 +106,7 @@ describe Dragonfly::Parameters do
           c.default_processing_options = {:scale => '0.5'}
           c.default_format = :png
           c.default_encoding = {:bit_rate => 24}
+          c.default_default = "default_image.png"
         end
       end
       it "should not affect .new" do
@@ -112,6 +115,7 @@ describe Dragonfly::Parameters do
         parameters.processing_options.should == {}
         parameters.format.should be_nil
         parameters.encoding.should == {}
+        parameters.default.should be_nil
       end
       it "should return the default if not set on parameters" do
         parameters = @parameters_class.new_with_defaults
@@ -119,18 +123,21 @@ describe Dragonfly::Parameters do
         parameters.processing_options.should == {:scale => '0.5'}
         parameters.format.should == :png
         parameters.encoding.should == {:bit_rate => 24}
+        parameters.default.should == "default_image.png"
       end
       it "should return the correct parameter if set" do
         parameters = @parameters_class.new_with_defaults(
           :processing_method => :yo,
           :processing_options => {:a => 'b'},
           :format => :txt,
-          :encoding => {:ah => :arg}
+          :encoding => {:ah => :arg},
+          :default => "other_image.png"
         )
         parameters.processing_method.should == :yo
         parameters.processing_options.should == {:a => 'b'}
         parameters.format.should == :txt
         parameters.encoding.should == {:ah => :arg}
+        parameters.default.should == "other_image.png"
       end
       it "should not override nil if explicity set" do
         @parameters_class.new_with_defaults(:format => nil).format.should be_nil
@@ -150,7 +157,8 @@ describe Dragonfly::Parameters do
         :processing_method => :duncan,
         :processing_options => {:bill => :gates},
         :format => 'mamamia',
-        :encoding => {:doogie => :howser}
+        :encoding => {:doogie => :howser},
+        :default => nil
       }
       @parameters_class.add_shortcut(:doobie, attributes)
       @parameters_class.hash_from_shortcut(:doobie).should == attributes

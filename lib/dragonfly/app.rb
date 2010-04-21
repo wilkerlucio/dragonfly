@@ -101,6 +101,7 @@ module Dragonfly
     configurable_attr :log do Logger.new('/var/tmp/dragonfly.log') end
     configurable_attr :cache_duration, 3600*24*365 # (1 year)
     configurable_attr :fallback_mime_type, 'application/octet-stream'    
+    configurable_attr :defaults_path, '/'
     
     # The call method required by Rack to run.
     #
@@ -150,8 +151,27 @@ module Dragonfly
     # app.fetch('abcd1234', '20x20!')   # returns a transformed temp_object, in this case with image data resized to 20x20
     # @see Parameters
     def fetch(uid, *args)
-      temp_object = temp_object_class.new(datastore.retrieve(uid))
-      temp_object.transform(*args)
+      begin
+        temp_object = temp_object_class.new(datastore.retrieve(uid))
+        temp_object.transform(*args)
+      rescue DataStorage::DataNotFound => e
+        parameters = args[0]
+        
+        raise e unless parameters.default
+        
+        temp_object = temp_object_class.new(get_default_file(parameters.default))
+        temp_object.transform(*args)
+      end
+    end
+    
+    def get_default_file(default)
+      path = defaults_path
+      path += '/' unless path =~ %r{/$}
+      path += default
+      
+      raise DataStorage::DataNotFound, "Default file not found at #{path}" unless File.exists? path
+      
+      File.new(path)
     end
 
     def generate(*args)

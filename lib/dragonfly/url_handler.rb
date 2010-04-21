@@ -16,6 +16,7 @@ module Dragonfly
       :processing_method => 'm',
       :processing_options => 'o',
       :encoding => 'e',
+      :default => 'd',
       :sha => 's'
     }
  
@@ -44,7 +45,8 @@ module Dragonfly
         :processing_method => extract_processing_method(path, query),
         :processing_options => extract_processing_options(path, query),
         :format => extract_format(path, query),
-        :encoding => extract_encoding(path, query)
+        :encoding => extract_encoding(path, query),
+        :default => extract_default(path, query)
       }.reject{|k,v| v.nil? }
       parameters = parameters_class.new(attributes)
       validate_parameters(parameters, query)
@@ -52,7 +54,7 @@ module Dragonfly
     end
 
     def parameters_to_url(parameters)
-      query_string = [:processing_method, :processing_options, :encoding].map do |attribute|
+      query_string = [:processing_method, :processing_options, :encoding, :default].map do |attribute|
         build_query(MAPPINGS[attribute] => parameters[attribute]) unless parameters[attribute].blank?
       end.compact.join('&')
       sha_string = "&#{MAPPINGS[:sha]}=#{sha_from_parameters(parameters)}" if protect_from_dos_attacks?
@@ -89,6 +91,10 @@ module Dragonfly
     def extract_encoding(path, query)
       encoding = query[MAPPINGS[:encoding]]
       symbolize_keys(encoding) if encoding
+    end
+    
+    def extract_default(path, query)
+      query[MAPPINGS[:default]]
     end
 
     attr_reader :parameters_class

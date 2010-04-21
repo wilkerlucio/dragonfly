@@ -63,7 +63,26 @@ describe Dragonfly::App do
       response = make_request(@app, '/hello.png')
       response.status.should == 404
     end
-
+    
+  end
+  
+  describe "default" do
+    before(:each) do
+      @app = Dragonfly::App[:images]
+      @app.url_handler.protect_from_dos_attacks = false
+      @app.register_encoder(Dragonfly::Encoding::TransparentEncoder)
+      @app.defaults_path = File.join(File.dirname(__FILE__), %w[.. .. fixtures])
+    end
+    
+    it "should return default file if no data found and default is set" do
+      response = make_request(@app, '/uid.png?d=default.png')
+      response.status.should == 200
+    end
+    
+    it "should return 404 if default file is not found" do
+      response = make_request(@app, '/uid.png?d=no_file.png')
+      response.status.should == 404
+    end
   end
 
   describe "mime types" do

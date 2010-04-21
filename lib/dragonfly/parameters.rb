@@ -1,4 +1,5 @@
 require 'rack'
+require 'digest/sha1'
 
 module Dragonfly
   class Parameters
@@ -16,13 +17,15 @@ module Dragonfly
       configurable_attr :default_processing_options, {}
       configurable_attr :default_format
       configurable_attr :default_encoding, {}
+      configurable_attr :default_default
       
       def new_with_defaults(attributes={})
         new({
           :processing_method => default_processing_method,
           :processing_options => default_processing_options,
           :format => default_format,
-          :encoding => default_encoding
+          :encoding => default_encoding,
+          :default => default_default
         }.merge(attributes))
       end
       
@@ -112,10 +115,11 @@ module Dragonfly
       self.processing_options = attributes.delete(:processing_options) || {}
       self.format             = attributes.delete(:format)
       self.encoding           = attributes.delete(:encoding) || {}
+      self.default            = attributes.delete(:default) || nil
       raise ArgumentError, "Parameters doesn't recognise the following parameters: #{attributes.keys.join(', ')}" if attributes.any?
     end
 
-    attr_accessor :uid, :processing_method, :processing_options, :format, :encoding
+    attr_accessor :uid, :processing_method, :processing_options, :format, :encoding, :default
     
     def [](attribute)
       send(attribute)
@@ -143,7 +147,8 @@ module Dragonfly
         :processing_method => processing_method,
         :processing_options => processing_options,
         :format => format,
-        :encoding => encoding
+        :encoding => encoding,
+        :default => default
       }
     end
 
@@ -155,7 +160,8 @@ module Dragonfly
         format.to_s,
         processing_method.to_s,
         processing_options.sort{|a,b| a[0].to_s <=> b[0].to_s },
-        encoding.sort{|a,b| a[0].to_s <=> b[0].to_s }
+        encoding.sort{|a,b| a[0].to_s <=> b[0].to_s },
+        default
       ]
     end
 
